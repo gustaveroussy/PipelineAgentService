@@ -1,7 +1,7 @@
 PipelineAgentService is a microservice designed to empower biologists and doctors, even those without command-line interface (CLI) expertise, to effortlessly launch data analysis pipelines on the Flamingo platform. This AI agent is engineered for self-sufficiency, autonomously monitoring and maintaining pipeline operations.  It possesses the capability to resolve common failure scenarios and automatically recover pipeline execution, ensuring smooth and continuous data processing. In situations where the Agent encounters issues beyond its automated resolution capabilities, it will proactively engage engineers to seek solutions, minimizing downtime and ensuring reliable pipeline performance.
 
 ## Service Architecture Diagram
-![Service Architecture](https://github.com/gustaveroussy/PipelineAgentService/blob/main/img/PipelineAgentServiceArchitecture.jpg)
+![Service Architecture](https://github.com/gustaveroussy/PipelineAgentService/blob/main/img/PipelineAgentServiceArch.jpg)
 
 ## Refactoring Records:
 
