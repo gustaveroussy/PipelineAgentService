@@ -22,7 +22,7 @@ PipelineAgentService is a microservice designed to empower biologists and doctor
 12. **Authentication Service Communication:** Established communication with the authentication service.
 13. **User Response Optimization:** Enhanced user response mechanism by transitioning from `invoke()` to `stream()`.
 
-## Design of workflow
+## Workflow Design
 The data processing workflow is comprised of several sequential stages: 
 ![Service Architecture](https://github.com/gustaveroussy/PipelineAgentService/blob/main/img/PipelineWorkflow.jpg)
 
