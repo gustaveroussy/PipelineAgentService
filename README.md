@@ -21,3 +21,11 @@ PipelineAgentService is a microservice designed to empower biologists and doctor
 11. **Debugging and Tracing with LangSmith:** Leveraged LangSmith for debugging and tracking API call executions.
 12. **Authentication Service Communication:** Established communication with the authentication service.
 13. **User Response Optimization:** Enhanced user response mechanism by transitioning from `invoke()` to `stream()`.
+
+## Design of workflow
+The data processing workflow is comprised of several sequential stages: 
+![Service Architecture](https://github.com/gustaveroussy/PipelineAgentService/blob/main/img/PipelineWorkflow.jpg)
+
+Each stage is characterized by a set of possible states, and the workflow progresses through these stages and states according to defined transition rules: 
+![Service Architecture](https://github.com/gustaveroussy/PipelineAgentService/blob/main/img/StageWorkflow.jpg)
+

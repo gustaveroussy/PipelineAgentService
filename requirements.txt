@@ -1,0 +1,32 @@
+# 基础框架
+requests>=2.26.0         # HTTP请求库
+fastapi>=0.104.0         # Web框架
+uvicorn>=0.23.2          # ASGI服务器
+python-multipart>=0.0.6  # 表单数据处理
+
+# 语言模型与AI
+langchain>=0.0.340       # 语言链核心库
+langgraph>=0.0.12        # 流程图式对话管理
+openai>=1.3.0            # OpenAI官方SDK
+
+# 模板与前端
+jinja2>=3.1.2            # HTML模板渲染
+
+# 环境与安全
+python-dotenv>=1.0.0     # 环境变量管理
+itsdangerous>=2.1.2      # 会话签名加密
+
+# 数据模型
+pydantic>=2.4.2          # 数据验证与设置管理
+
+# 流式响应
+sse-starlette>=1.6.5     # Server-Sent Events支持
+
+# 异步支持
+anyio>=3.7.1             # 异步I/O基础库
+
+# google api
+google-auth
+google-auth-httplib2 
+google-auth-oauthlib 
+google-api-python-client 
