@@ -1,20 +1,22 @@
 # PipelineAgent
 
-# 重构记录：
-1. 完全使用open-webui作为前端，少量修改代码，轻量配置，以省去大量维护前端的工作
-2. 后端使用vinference封装vllm，开发环境使用ollama快速搭建大语言模型的服务
-3. 使用LangServe将智能体封装成为REST API的微服务，专注于流程管理的部分
-4. 使用LangGraph重构工作流，在需要人工确定的重要操作上引入人机交互(human-in-the-loop)
-5. 简化LangChain的调用，使其专注于构建思维链CoT
-6. Intro ReAct(Reasoning and Action) to 数据处理流水线的值守进程使用
-7. 对常见的流水线的问题构建简易的知识库，让值守程序可以自行解决大部分问题
-8. 优化提示词
-9. 使用生产者-消费者模式管理数据流水线任务
-    - 与用户的对话生产任务
-    - 任务在RQ(Redis Queue)中管理
-    - RQ值守队列，消费队列中的任务
-10. 封装工具调用
-11. LangSmith对调用的调试和跟踪
-12. 认证服务通信
-13. 优化相应: invoke() -> stream()
+PipelineAgentService is designed to empower biologists and doctors, even those without command-line interface (CLI) expertise, to effortlessly launch data analysis pipelines on the Flamingo platform. This AI agent is engineered for self-sufficiency, autonomously monitoring and maintaining pipeline operations.  It possesses the capability to resolve common failure scenarios and automatically recover pipeline execution, ensuring smooth and continuous data processing. In situations where the Agent encounters issues beyond its automated resolution capabilities, it will proactively engage engineers to seek solutions, minimizing downtime and ensuring reliable pipeline performance.
 
+## Refactoring Records:
+
+1.  **Frontend Overhaul:** Fully adopted open-webui as the frontend, implementing minor code modifications and lightweight configurations to significantly reduce frontend maintenance efforts.
+2.  **Backend Enhancement:** Utilized vinference to encapsulate vllm for the backend, and employed ollama in the development environment for rapid deployment of large language model services.
+3.  **Microservice Architecture:** Encapsulated the agent as a REST API microservice using LangServe, concentrating on process management functionalities.
+4.  **Workflow Re-engineering with Human-in-the-Loop:**  Rebuilt the workflow using LangGraph, incorporating human-in-the-loop interaction for crucial operations requiring manual verification.
+5.  **LangChain Simplification:** Streamlined LangChain invocations, directing its focus towards constructing Chain-of-Thought (CoT) reasoning.
+6.  **Integration of ReAct for Watchdog Process:** Introduced ReAct (Reasoning and Action) framework to enhance the watchdog process of the data processing pipeline.
+7.  **Knowledge Base for Self-Resolution:** Developed a basic knowledge base addressing common pipeline issues, empowering the watchdog program to autonomously resolve the majority of problems.
+8.  **Prompt Optimization:** Refined and improved prompt design.
+9.  **Producer-Consumer Task Management:** Implemented a producer-consumer pattern to manage data pipeline tasks:
+    *   User conversations generate tasks (task production).
+    *   Tasks are managed within RQ (Redis Queue).
+    *   RQ monitors and processes tasks from the queue (task consumption).
+10. **Tool Call Encapsulation:**  Wrapped and abstracted tool invocations.
+11. **Debugging and Tracing with LangSmith:** Leveraged LangSmith for debugging and tracking API call executions.
+12. **Authentication Service Communication:** Established communication with the authentication service.
+13. **User Response Optimization:** Enhanced user response mechanism by transitioning from `invoke()` to `stream()`.
