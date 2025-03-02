@@ -1,0 +1,174 @@
+import yaml
+from typing import Literal
+from langchain.prompts import (PromptTemplate, 
+                               ChatPromptTemplate, 
+                               HumanMessagePromptTemplate, 
+                               AIMessagePromptTemplate, 
+                               SystemMessagePromptTemplate, 
+                               FewShotPromptTemplate, 
+                               FewShotChatMessagePromptTemplate)
+from pydantic import BaseModel
+
+
+from backend.lib.workflow.states import PipelineState
+from backend.lib.workflow.constants import (PipelineTaskAction,
+                                            PROJECT_NAME_KEY, BATCH_ID_KEY, 
+                                            Sequencing_Type_KEY, Pipeline_Type_KEY,
+                                            Pipeline_Name_KEY, Sequencing_Species_KEY,
+                                            Analysis_Mode_KEY, DataSource_Type_KEY)
+
+constants_dict = {"ProjectNameKey": PROJECT_NAME_KEY,
+                  "BatchIDKey": BATCH_ID_KEY,
+                  "SequencingTypeKey": Sequencing_Type_KEY,
+                  "PipelineTypeKey": Pipeline_Type_KEY,
+                  "PipelineNameKey": Pipeline_Name_KEY,
+                  "SequencingSpeciesKey": Sequencing_Species_KEY,
+                  "AnalysisModeKey": Analysis_Mode_KEY,
+                  "DataSourceTypeKey": DataSource_Type_KEY}
+
+class pipeline_prompt_builder:
+    def __init__(self, prompt_file="config/prompts/pipeline/pipeline_task_new.yaml"):
+        self.prompt_file = prompt_file
+        with open(prompt_file, "r") as f : 
+            self.prompt_data = yaml.safe_load(f)
+
+    def load_prompts(self, task_name, prompt_type: str = Literal["formatter", "question"], constants_dict = constants_dict):
+        """ 在yaml文件中加载的提示词遵循以下格式：
+        task_name:
+            system: "I need to process the {ProjectNameKey} data for the {BatchIDKey} project."
+            output:
+                formatter: "I need to process the {ProjectNameValue} data for the {BatchIDValue} project."
+                question: "What is the {missing_key}?"
+            message:
+                formatter: "I need to process the {ProjectNameValue} data for the {BatchIDValue} project."
+                question: "What is the {missing_key}?"
+            examples:
+                - Q: "I need to process the {ProjectNameKey} data for the {BatchIDKey} project."
+                  A:
+                    formatter: "I need to process the {ProjectNameValue} data for the {BatchIDValue} project."
+                    question: "What is the {missing_key}?"
+        """
+        system_template = self.prompt_data.get(task_name).get("system").format(**constants_dict)
+        output_template = self.prompt_data.get(task_name).get("output").get(prompt_type).format(**constants_dict)
+        message_template = self.prompt_data.get(task_name).get("message").get(prompt_type).format(**constants_dict)
+        examples_template = [ {'Q': item.get('Q').format(**constants_dict),
+                               'A': item.get('A').format(**constants_dict)}
+                                    for item in self.prompt_data.get(task_name).get("examples").get(prompt_type) ] 
+        
+        system_prompt = SystemMessagePromptTemplate.from_template(system_template)
+        output_prompt = SystemMessagePromptTemplate.from_template(output_template)
+
+        # 这是一个用于格式化示例的提示模板。
+        example_prompt = ChatPromptTemplate.from_messages(
+            [ t 
+            for p in examples_template 
+            for t in [HumanMessagePromptTemplate.from_template(p["Q"]), AIMessagePromptTemplate.from_template(p["A"])] 
+            ]
+        )
+
+        # 使用上面的提示模板格式化示例。
+        few_shot_prompt = FewShotChatMessagePromptTemplate(
+            examples = [ {} for i in range(len(examples_template)) ],
+            example_prompt = example_prompt,
+        )
+
+        message_prompt = HumanMessagePromptTemplate.from_template(message_template)
+
+        # 定义主要提示模板，包含系统提示、few-shot示例和人类信息提示
+        prompt = ChatPromptTemplate.from_messages(
+            [
+                system_prompt,
+                output_prompt,
+                few_shot_prompt,
+                message_prompt,
+            ]
+        )
+
+        return prompt
+
+    def get_missing_key(self, state: PipelineState) -> str:
+        if state.args.get(PROJECT_NAME_KEY) is None:
+            return PROJECT_NAME_KEY
+        if state.args.get(Sequencing_Type_KEY) is None:
+            return Sequencing_Type_KEY
+        # if state.args.get(Pipeline_Type_KEY) is None:
+        #     return Pipeline_Type_KEY
+        if state.args.get(Pipeline_Name_KEY) is None:
+            return Pipeline_Name_KEY
+        if state.args.get(Sequencing_Species_KEY) is None:
+            return Sequencing_Species_KEY
+        if state.args.get(Analysis_Mode_KEY) is None:
+            return Analysis_Mode_KEY
+        if state.args.get(DataSource_Type_KEY) is None:
+            return DataSource_Type_KEY
+        if state.args.get(BATCH_ID_KEY) is None:
+            return BATCH_ID_KEY
+
+    def new_pipeline_task_prompt(self, state: PipelineState):
+        d = constants_dict.copy()
+        d["ProjectNameValue"] = state.args.get(PROJECT_NAME_KEY)
+        d["BatchIDValue"] = state.args.get(BATCH_ID_KEY)
+        d["SequencingTypeValue"] = state.args.get(Sequencing_Type_KEY)
+        d["PipelineTypeValue"] = state.args.get(Pipeline_Type_KEY)
+        d["PipelineNameValue"] = state.args.get(Pipeline_Name_KEY)
+        d["SequencingSpeciesValue"] = state.args.get(Sequencing_Species_KEY)
+        d["AnalysisModeValue"] = state.args.get(Analysis_Mode_KEY)
+        d["DataSourceTypeValue"] = state.args.get(DataSource_Type_KEY)
+        # d["missing_key"] = self.get_missing_key(state)
+        formatter_prompt= self.load_prompts(task_name="task_new", prompt_type = "formatter", constants_dict = d)
+        question_prompt = self.load_prompts(task_name="task_new", prompt_type = "question",  constants_dict = d)
+        return formatter_prompt, question_prompt
+
+    def del_pipeline_task_prompt(self, state: PipelineState):
+        return
+
+    def update_pipeline_task_prompt(self, state: PipelineState):
+        return
+
+    def show_pipeline_task_prompt(self, state: PipelineState):
+        return  
+
+    def show_all_pipeline_tasks_prompt(self, state: PipelineState):
+        return
+
+    def default_pipeline_prompt(self, state: PipelineState):
+        return
+
+    def pipeline_chat_prompt(self, state: PipelineState):
+        if state.action == PipelineTaskAction.NEW:
+            return self.new_pipeline_task_prompt(state)
+        elif state.action == PipelineTaskAction.DEL:
+            return self.del_pipeline_task_prompt(state)
+        elif state.action == PipelineTaskAction.UPDATE:
+            return self.update_pipeline_task_prompt(state)
+        elif state.action == PipelineTaskAction.SHOW:
+            return self.show_pipeline_task_prompt(state)
+        elif state.action == PipelineTaskAction.SHOW_ALL:
+            return self.show_all_pipeline_tasks_prompt(state)
+        else:
+            return self.default_pipeline_prompt(state)
+        
+
+    def formatter_update_state(self, response, state):
+        changed = False
+        yaml_data = "\n".join([line.lstrip() for line in response.content.splitlines()])
+        for k,v in yaml.safe_load(yaml_data).items():
+            if v is not None and state.args.get(k) is None:
+                state.args.update({k: v})
+                changed = True
+        return state, changed
+    
+    def build_tip(self, response, state: BaseModel):
+        print("response: \n", response.content)
+        _, changed = self.formatter_update_state(response, state)
+        print("changed: ", changed)
+        if None not in state.args.values():
+            return None
+        
+        if changed:
+            missing_key = self.get_missing_key(state)
+            # print("missing_key: ", missing_key)
+            return f"please kindly ask user to provide the missing information about {missing_key}"
+        
+        else:
+            return f"user message is not clear. No information was updated. Please double check with the user his expression."

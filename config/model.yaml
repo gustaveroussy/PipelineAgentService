@@ -1,0 +1,7 @@
+ollama:
+  temperature: 0.7
+  model_name: 'qwen2.5:7b'
+
+vllm:
+  temperature: 0.7
+  model_name: 'qwen2.5:7b'
