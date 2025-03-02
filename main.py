@@ -1,6 +1,10 @@
-import yaml, logging, uuid, time, json
+import yaml, uuid, time, json
+# import logging
+from loguru import logger
+
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import Response, StreamingResponse
 
 from langserve import add_routes
 from langchain_ollama import ChatOllama
@@ -9,13 +13,13 @@ from langchain_core.runnables import RunnableLambda
 from langchain.prompts import ChatPromptTemplate
 from langgraph.errors import GraphInterrupt
 
-from fastapi.responses import Response, StreamingResponse
+from langgraph.types import interrupt, Command
 
 from service import DialogueProcessor
 
 # 配置日志
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger(__name__)
+# logging.basicConfig(level=logging.INFO)
+# logger = logging.getLogger(__name__)
 
 # API_KEY = "sk-1f49596c4663696c3fdcbde90481a152"
 # API_NAME= "pipeline-agent-api"
@@ -34,6 +38,9 @@ logger = logging.getLogger(__name__)
 # 创建应用
 app = FastAPI()
 
+# 存储中断的会话
+interrupted_threads = {}
+
 with open("config/model.yaml", "r") as f:
     config = yaml.safe_load(f)
 
@@ -43,9 +50,9 @@ llm = ChatOllama(
     temperature = config.get("ollama").get("temperature"),
 )
 
-builder = DialogueProcessor(llm)
-graph = builder.compile()
-# graph.builder = builder
+chat = DialogueProcessor(llm)
+graph = chat.compile()
+chat.graph = graph
 
 # 添加CORS中间件
 app.add_middleware(
@@ -121,7 +128,7 @@ def build_stream_response(input_text, thread_id, delta, finish_reason = None):
 def openai_response_format_chain(llm, func):
     return llm | RunnableLambda(lambda x: func(x))
 
-chain = openai_response_format_chain(graph, build_response)
+chain = openai_response_format_chain(chat.graph, build_response)
 
 add_routes(
     app,
@@ -149,7 +156,7 @@ async def chat_completions(request: Request):
     # 非流式处理方式
     if not data.get("stream", False):
         try:
-            result = graph.invoke(
+            result = chat.graph.invoke(
                 {'messages': HumanMessage(content=input_text)},
                 config=config
             )
@@ -163,7 +170,7 @@ async def chat_completions(request: Request):
         
         # 通常只处理第一个中断
         if isinstance(interrupts, tuple) and interrupts:
-            return interrupts[0].value, interrupts.ns[0]
+            return interrupts[0].value, interrupts[0].ns[0]
             
         # 防御性编程 - 如果直接是对象而不是元组
         elif hasattr(interrupts, "value"):
@@ -183,9 +190,19 @@ async def chat_completions(request: Request):
     # 流式处理方式
     def generate_stream():
         try:
-            stream = graph.stream(
-                {'messages': HumanMessage(content=input_text)},
-                config=config
+            if thread_id in interrupted_threads: 
+                interrupt_id = interrupted_threads[thread_id] 
+                config["configurable"]["interrupt"] = interrupt_id 
+                config["configurable"]["interrupt_response"] = True 
+                messages = Command(resume = input_text)
+                del interrupted_threads[thread_id]
+                logger.info(f"thread_id: {thread_id}, interrupt: {interrupt_id}")
+            else:
+                messages = {'messages': HumanMessage(content=input_text)}
+
+            stream = chat.graph.stream(
+                messages,
+                config=config,
             )
             
             # 发送初始响应
@@ -198,8 +215,10 @@ async def chat_completions(request: Request):
                     if "__interrupt__" in chunk:
                         # 处理中断
                         content, interrupt_id = get_interrupt_content(chunk)
+                        interrupted_threads[thread_id] = interrupt_id
+                        logger.info(f"thread_id: {thread_id}, interrupt: {interrupt_id}")
                     else:
-                        content = builder.stream_nodes_handler(chunk)
+                        content = chat.stream_nodes_handler(chunk)
                 
                 if content is None:
                     content = get_content(chunk)
@@ -215,6 +234,7 @@ async def chat_completions(request: Request):
             logger.error(f"Stream handling error: {str(e)}")
             yield build_stream_response(input_text, thread_id, {"content": f"pipeline-agent service failed to response."}, {"finish_reason": "error"})
             yield "data: [DONE]\n\n"
+            raise e
 
     return StreamingResponse(
         generate_stream(),

@@ -36,13 +36,12 @@ class DialogueProcessorABC(StateGraph, ABC):
         self.add_node(self.pipeline_node, self.pipeline)
         self.add_node(self.medical_node, self.medical)
         
-        # self.add_edge(START, self.chat_node)
         self.set_entry_point(self.chat_node)
         self.add_conditional_edges(self.chat_node, 
                                    self.route_dialogue, 
-                                   [self.medical_node, self.pipeline_node, END])
-        # self.add_edge(self.pipeline_node, END)
-        # self.add_edge(self.medical_node, END)
+                                   [self.medical_node, 
+                                    self.pipeline_node, 
+                                    END])
         self.set_finish_point(self.medical_node)
         self.set_finish_point(self.pipeline_node)
 
@@ -116,11 +115,11 @@ class DialoguePipelineABC(StateGraph, ABC):
     """
     有关数据处理流水线任务管理的对话处理器，该对话处理器用于管理数据处理流水线任务的增删改查
         update_chat_state: 调用本地小模型解析对话内容，并更新对话状态
-        new_pipeline:    创建新的数据处理流水线任务
-        del_pipeline:    删除数据处理流水线任务
-        change_pipeline: 修改数据处理流水线任务
-        show_pipeline:   查看数据处理流水线任务的具体信息
-        show_all:        查看所有数据处理流水线任务列表
+        new_pipeline:      创建新的数据处理流水线任务
+        del_pipeline:      删除数据处理流水线任务
+        change_pipeline:   修改数据处理流水线任务
+        show_pipeline:     查看数据处理流水线任务的具体信息
+        show_all:          查看所有数据处理流水线任务列表
     """
     def __init__(self):
         super().__init__(PipelineState)

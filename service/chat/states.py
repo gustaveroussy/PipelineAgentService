@@ -14,6 +14,7 @@ class ProcessorState(BaseModel):
     messages: Annotated[list[AnyMessage], add_messages]
     action: Optional[str] = Field(None, description = "The action to be taken regarding to the tasks of the pipeline")
     # response: Optional[str] = Field(None, description="The response to the user's input")
+    interrupted: Optional[bool] = Field(False, description="Whether the conversation has been interrupted")
 
 class PipelineStateArgsDict(TypedDict):
     DO_KEY: Optional[bool]

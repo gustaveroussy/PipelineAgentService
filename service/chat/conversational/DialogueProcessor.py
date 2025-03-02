@@ -1,9 +1,10 @@
-import logging
+# import logging
+from loguru import logger
 from typing import Union
 
 from langchain_core.messages import HumanMessage
 from langchain.prompts import HumanMessagePromptTemplate
-from langgraph.types import interrupt
+from langgraph.types import interrupt, Command
 from langgraph.graph import StateGraph, START, END
 from pydantic import BaseModel, Field
 
@@ -14,7 +15,7 @@ from service.chat.conversational.ConversationABC import DialogueProcessorABC
 # 2. 临时存储用户上传的配置文件
 # 3. 多轮对话
 
-logger = logging.getLogger(__name__)
+# logger = logging.getLogger(__name__)
 
 class DialogueProcessor(DialogueProcessorABC):
 
@@ -48,17 +49,24 @@ class DialogueProcessor(DialogueProcessorABC):
                 previous_action=state.action,
                 current_action=state.messages[-1].content
             )
-
+            
+            logger.info(f"formatted_message: {formatted_message}")
             response = self.llm.invoke([formatted_message]) 
             state.messages.append(response)
-            
-            print("response: ", response)
-            answer = interrupt(value=response.content)
-            print("answer: ", answer)
-            if "yes" not in answer.lower():
-                response.content = state.action
 
-        if response.content == "pipeline":
+            answer = interrupt(value=response.content)
+            state.messages.append(HumanMessage(content=answer))
+            logger.info(f"answer: {answer}")
+            
+            if "yes" not in answer.lower().split():
+                # tmp 
+                if state.action == "pipeline":
+                    state.action = "medical"
+                elif state.action == "medical":
+                    state.action = "pipeline"
+                state.messages.append(HumanMessage(content=state.action))
+                
+        elif response.content == "pipeline":
             state.action = "pipeline"
         elif response.content == "medical":
             state.action = "medical"
