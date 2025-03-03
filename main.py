@@ -1,4 +1,4 @@
-import yaml, uuid, time, json
+import uuid, json
 # import logging
 from loguru import logger
 
@@ -15,7 +15,7 @@ from langgraph.errors import GraphInterrupt
 
 from langgraph.types import interrupt, Command
 
-from service import DialogueProcessor
+from service import DialogueProcessor, load_model
 
 # 配置日志
 # logging.basicConfig(level=logging.INFO)
@@ -38,21 +38,16 @@ from service import DialogueProcessor
 # 创建应用
 app = FastAPI()
 
+# 加载模型
+llm = load_model()
+
 # 存储中断的会话
 interrupted_threads = {}
 
-with open("config/model.yaml", "r") as f:
-    config = yaml.safe_load(f)
-
-
-llm = ChatOllama(
-    model       = config.get("ollama").get("model_name"),
-    temperature = config.get("ollama").get("temperature"),
-)
-
+# 创建对话处理器
 chat = DialogueProcessor(llm)
 graph = chat.compile()
-chat.graph = graph
+# chat.graph = graph
 
 # 添加CORS中间件
 app.add_middleware(
@@ -84,6 +79,7 @@ async def list_models(response: Response):
         ]
     }
 
+# 构造invoke响应
 def build_response(result):
     # 构造响应，包括会话ID以便客户端在后续请求中使用
     response = {
@@ -111,6 +107,7 @@ def build_response(result):
     }
     return response
 
+# 构造流式响应
 def build_stream_response(input_text, thread_id, delta, finish_reason = None):
     return "data: " + json.dumps({
         "id": f"chatcmpl-{hash(input_text) % 10000}",
@@ -125,16 +122,19 @@ def build_stream_response(input_text, thread_id, delta, finish_reason = None):
         }]
     }) + "\n\n"
 
-def openai_response_format_chain(llm, func):
-    return llm | RunnableLambda(lambda x: func(x))
-
-chain = openai_response_format_chain(chat.graph, build_response)
-
+# 添加路由
 add_routes(
     app,
-    chain,
+    llm | RunnableLambda(lambda x: build_response(x)),
     path="/v1/chat",
 )
+
+@app.post("/v1/files")
+async def list_files(request: Request):
+    data = await request.json()
+    print(data)
+    return data
+
 
 @app.post("/v1/chat/completions")
 async def chat_completions(request: Request):
@@ -142,6 +142,8 @@ async def chat_completions(request: Request):
     messages = data.get("messages", [])
     input_text = messages[-1].get("content", "") if messages else ""
     interrupt_id = None
+
+    logger.info(f"Received request: {input_text}")
 
     # 安全获取 thread_id
     metadata = data.get("metadata", {})

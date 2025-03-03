@@ -11,7 +11,9 @@ from langchain_core.runnables import RunnablePassthrough, RunnableLambda, Runnab
 
 from service.chat.states import PipelineState
 from service.chat.constants import PipelineTaskAction
-from service.chat.conversational.prompts import pipeline_prompt_builder
+from service.chat.pipeline.prompts import pipeline_prompt_builder
+
+from service.utils.config import load_model
 
 class DialoguePipeline(StateGraph):
     """
@@ -30,11 +32,7 @@ class DialoguePipeline(StateGraph):
         super().__init__(PipelineState)
 
         if llm is None: 
-            llm = ChatOllama(
-                    temperature = 0.7,
-                    model = 'qwen2.5:3b',
-                    # streaming=True
-                )
+            llm = load_model()
 
         if checkpointer is None:
             checkpointer = MemorySaver()
@@ -163,7 +161,8 @@ class DialoguePipeline(StateGraph):
         """
         编译对话处理器
         """
-        return super().compile(checkpointer=self.checkpointer)
+        self.graph = super().compile(checkpointer=self.checkpointer)
+        return self.graph
 
     
 
