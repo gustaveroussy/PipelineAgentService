@@ -6,7 +6,7 @@ PipelineAgentService is a microservice designed to empower biologists and clinic
 ## Refactoring Records:
 
 1.  **Frontend Overhaul:** Fully adopted open-webui as the frontend, implementing minor code modifications and lightweight configurations to significantly reduce frontend maintenance efforts.
-2.  **Backend Enhancement:** Utilized vinference to encapsulate vllm for the backend, and employed ollama in the development environment for rapid deployment of large language model services.
+2.  **Backend Enhancement:** Utilized xinference to encapsulate vllm for the backend, and employed ollama in the development environment for rapid deployment of large language model services.
 3.  **Microservice Architecture:** Encapsulated the agent as a REST API microservice using LangServe, concentrating on process management functionalities.
 4.  **Workflow Re-engineering with Human-in-the-Loop:**  Rebuilt the workflow using LangGraph, incorporating human-in-the-loop interaction for crucial operations requiring manual verification.
 5.  **LangChain Simplification:** Streamlined LangChain invocations, directing its focus towards constructing Chain-of-Thought (CoT) reasoning.
