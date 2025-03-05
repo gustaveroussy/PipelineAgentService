@@ -13,11 +13,11 @@ This service is designed to support a variety of data processing pipelines, cate
 To ensure seamless integration and optimal performance, pipelines supported by the PipelineAgentService must adhere to the following conventions:
 
 -   **Input/Output File Organization:**
-    -      Input files should be organized in a structured directory, with clear naming conventions that reflect the data being processed.
-    -      Output files should be generated in a dedicated output directory, with filenames that clearly indicate the results of each processing step.
-    -      The agent expects the input and output directories to be defined within the pipeline configuration or through standardized parameters.
+    - Input files should be organized in a structured directory, with clear naming conventions that reflect the data being processed.
+    - Output files should be generated in a dedicated output directory, with filenames that clearly indicate the results of each processing step.
+    - The agent expects the input and output directories to be defined within the pipeline configuration or through standardized parameters.
 -   **Parameter Interface Definition:**
-    -      Parameters should be clearly documented, with descriptions of their purpose and expected values.
+    - Parameters should be clearly documented, with descriptions of their purpose and expected values.
     <!-- -      Pipeline parameters should be defined in a configuration file (e.g., YAML, JSON) or through command-line arguments.
     -      The agent expects specific parameters to be defined within the pipeline, in order to allow it to monitor and control the pipeline's execution.
     -   The agent also expects that the pipeline outputs a log file, so that the agent can monitor the progress of the pipeline. -->
